@@ -1,11 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using ChatterProject.Models;
+﻿using ChatterProject.Models;
 using HtmlAgilityPack;
 using HtmlAgilityPack.CssSelectors.NetCore;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace ChatterProject.Services
 {
@@ -14,29 +12,46 @@ namespace ChatterProject.Services
         Task<Chatter> GetChatters();
     }
 
-    public class ChatterService: IChatterService
+    public class ChatterService : IChatterService
     {
-        public ChatterService()
+        private static Task<HtmlDocument> GetDoc(string url = "https://news.ycombinator.com/")
         {
-            const string source = "https://news.ycombinator.com/"; 
             var web = new HtmlWeb();
-            _docTask = web.LoadFromWebAsync(source);
+            return web.LoadFromWebAsync(url);
         }
-
-        private readonly Task<HtmlDocument> _docTask;
 
         public async Task<Chatter> GetChatters()
         {
-            var doc = await _docTask;
+            var doc = await GetDoc();
             var node = doc.QuerySelector(".storylink");
 
             var source = node.Attributes["href"].Value;
             var title = node.InnerText;
 
+            var sourceDoc = await GetDoc(source);
+            var paragraphs = sourceDoc.QuerySelectorAll("p");
+            HtmlNode firstDecentSizeParagraph = null;
+
+            Console.WriteLine("Paragraphs");
+            Console.Write(paragraphs);
+            Console.WriteLine("Paragraphs");
+
+            if (paragraphs != null && paragraphs.Count != 0)
+            {
+                firstDecentSizeParagraph = paragraphs.First(p => p.InnerText.Length >= 10);
+            }
+
+            var description = "";
+
+            if (firstDecentSizeParagraph != null)
+            {
+                description = firstDecentSizeParagraph.InnerText;
+            }
+
             return new Chatter()
             {
                 Title = title,
-                Description = title,
+                Description = description,
                 Source = source
             };
         }
