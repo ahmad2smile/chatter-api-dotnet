@@ -1,13 +1,13 @@
-﻿using System.Threading.Tasks;
-using ChatterProject.Models;
+﻿using ChatterProject.Models;
 using ChatterProject.Services;
 using Microsoft.AspNetCore.Mvc;
+using System.Threading.Tasks;
 
 namespace ChatterProject.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class ChatterController: ControllerBase
+    public class ChatterController : ControllerBase
     {
         private readonly IChatterService _chatterService;
 

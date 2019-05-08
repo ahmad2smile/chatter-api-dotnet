@@ -1,6 +1,9 @@
 ﻿using ChatterProject.Models;
 using HtmlAgilityPack;
 using HtmlAgilityPack.CssSelectors.NetCore;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Caching.Distributed;
+using Newtonsoft.Json;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -14,6 +17,15 @@ namespace ChatterProject.Services
 
     public class ChatterService : IChatterService
     {
+        private IHttpContextAccessor _accessor;
+        private IDistributedCache _cache;
+
+        public ChatterService(IHttpContextAccessor accessor, IDistributedCache cache)
+        {
+            _accessor = accessor;
+            _cache = cache;
+        }
+
         private static Task<HtmlDocument> GetDoc(string url = "https://news.ycombinator.com/")
         {
             var web = new HtmlWeb();
@@ -22,6 +34,15 @@ namespace ChatterProject.Services
 
         public async Task<Chatter> GetChatters()
         {
+            var userIp = _accessor.HttpContext.Connection.RemoteIpAddress.ToString();
+            var chatterSerialized = await _cache.GetStringAsync(userIp);
+
+
+            if (!string.IsNullOrEmpty(chatterSerialized))
+            {
+                return JsonConvert.DeserializeObject<Chatter>(chatterSerialized);
+            }
+
             var doc = await GetDoc();
             var node = doc.QuerySelector(".storylink");
 
@@ -39,6 +60,8 @@ namespace ChatterProject.Services
             if (paragraphs != null && paragraphs.Count != 0)
             {
                 firstDecentSizeParagraph = paragraphs.First(p => p.InnerText.Length >= 10);
+
+
             }
 
             var description = "";
@@ -48,12 +71,22 @@ namespace ChatterProject.Services
                 description = firstDecentSizeParagraph.InnerText;
             }
 
-            return new Chatter()
+
+            var newChatter = new Chatter()
             {
                 Title = title,
                 Description = description,
                 Source = source
             };
+
+            var newChatterSerialized = JsonConvert.SerializeObject(newChatter);
+
+            var options = new DistributedCacheEntryOptions()
+                .SetSlidingExpiration(TimeSpan.FromSeconds(120));
+
+            await _cache.SetStringAsync(userIp, newChatterSerialized, options);
+
+            return newChatter;
         }
     }
 }

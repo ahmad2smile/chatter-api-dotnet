@@ -23,6 +23,8 @@ namespace ChatterProject
             });
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
             services.AddSingleton<IChatterService, ChatterService>();
+            services.AddDistributedMemoryCache();
+            services.AddHttpContextAccessor();
 
         }
 
