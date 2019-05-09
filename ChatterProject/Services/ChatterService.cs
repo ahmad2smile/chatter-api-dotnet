@@ -26,7 +26,7 @@ namespace ChatterProject.Services
             _cache = cache;
         }
 
-        private static Task<HtmlDocument> GetDoc(string url = "https://news.ycombinator.com/")
+        private static Task<HtmlDocument> GetDoc(string url)
         {
             var web = new HtmlWeb();
             return web.LoadFromWebAsync(url);
@@ -43,11 +43,15 @@ namespace ChatterProject.Services
                 return JsonConvert.DeserializeObject<Chatter>(chatterSerialized);
             }
 
-            var doc = await GetDoc();
-            var node = doc.QuerySelector(".storylink");
+            var random = new Random();
 
-            var source = node.Attributes["href"].Value;
-            var title = node.InnerText;
+            var doc = await GetDoc($"https://news.ycombinator.com/news?p={random.Next(13)}");
+            var storyLinkNodes = doc.QuerySelectorAll(".storylink");
+
+            var storyLink = storyLinkNodes[random.Next(storyLinkNodes.Count)];
+
+            var source = storyLink.Attributes["href"].Value;
+            var title = storyLink.InnerText;
 
             var sourceDoc = await GetDoc(source);
             var paragraphs = sourceDoc.QuerySelectorAll("p");
